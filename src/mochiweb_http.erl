@@ -277,7 +277,7 @@ websocket_init(Socket, Path, Headers, OriginValidator) ->
             exit(websocket_origin_check_failed)
     end.
 
-websocket_init_with_origin_validated(Socket, Path, Headers, _Origin) ->    
+websocket_init_with_origin_validated(Socket, Path, Headers, Origin) ->    
     Host     = mochiweb_headers:get_value("Host", Headers),
     SubProto = mochiweb_headers:get_value("Sec-Websocket-Protocol", Headers),
     Key1     = mochiweb_headers:get_value("Sec-Websocket-Key1", Headers),
@@ -318,7 +318,7 @@ websocket_init_with_origin_validated(Socket, Path, Headers, _Origin) ->
             "Upgrade: WebSocket\r\n",
             "Connection: Upgrade\r\n",
             "Sec-WebSocket-Location: ", Proto,Host,Path, "\r\n",
-            "Sec-WebSocket-Origin: ", HttpScheme, "://", Host, "\r\n",
+            "Sec-WebSocket-Origin: ", Origin, "\r\n",
             SubProtoHeader,
             "\r\n",
             <<Sig/binary>>

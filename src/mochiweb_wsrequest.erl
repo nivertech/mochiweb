@@ -6,8 +6,9 @@
 %%
 -module(mochiweb_wsrequest, [Pid, Path, Headers, Peername, SocketType]).
 
--export([send/1, close/0, get/1, get_header_value/1, get_cookie_value/1]).
+-export([send/1, close/0, get/1, get_header_value/1, get_cookie_value/1, parse_qs/0]).
 
+-define(SAVE_QS, mochiweb_request_qs).
 -define(SAVE_COOKIE, mochiweb_request_cookie).
 
 get(path)       -> Path;
@@ -40,6 +41,21 @@ get(peer) ->
 send(Msg)       -> mochiweb_websocket_delegate:send(Pid, Msg).
 
 close()         -> mochiweb_websocket_delegate:close(Pid).
+
+%% @spec parse_qs() -> [{Key::string(), Value::string()}]
+%% @doc Parse the query string of the URL.
+parse_qs() ->
+    case erlang:get(?SAVE_QS) of
+        undefined ->
+            %% TODO : ZVI
+            RawPath = Path,
+            {_, QueryString, _} = mochiweb_util:urlsplit_path(RawPath),
+            Parsed = mochiweb_util:parse_qs(QueryString),
+            put(?SAVE_QS, Parsed),
+            Parsed;
+        Cached ->
+            Cached
+    end.
 
 %% @spec get_header_value(K) -> undefined | Value
 %% @doc Get the value of a given request header.

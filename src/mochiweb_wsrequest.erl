@@ -4,17 +4,29 @@
 %% and has cache of useful properties.
 %% Parts of API copied from mochiweb_request.erl
 %%
--module(mochiweb_wsrequest, [Pid, Path, Headers, Peername, SocketType]).
+-module(mochiweb_wsrequest, [Pid, RawPath, Headers, Peername, SocketType]).
 
 -export([send/1, close/0, get/1, get_header_value/1, get_cookie_value/1, parse_qs/0]).
 
 -define(SAVE_QS, mochiweb_request_qs).
+-define(SAVE_PATH, mochiweb_request_path).
 -define(SAVE_COOKIE, mochiweb_request_cookie).
 
-get(path)       -> Path;
+
+get(raw_path)   -> RawPath;
 get(headers)    -> Headers;
 get(peername)   -> Peername;
 get(type)       -> SocketType;  %% plain or ssl
+get(path) ->
+    case erlang:get(?SAVE_PATH) of
+        undefined ->
+            {Path0, _, _} = mochiweb_util:urlsplit_path(RawPath),
+            Path = mochiweb_util:unquote(Path0),
+            put(?SAVE_PATH, Path),
+            Path;
+        Cached ->
+            Cached
+    end;
 get(peer) ->
     case Peername of 
         {ok, {Addr={10, _, _, _}, _Port}} ->
@@ -48,7 +60,6 @@ parse_qs() ->
     case erlang:get(?SAVE_QS) of
         undefined ->
             %% TODO : ZVI
-            RawPath = Path,
             {_, QueryString, _} = mochiweb_util:urlsplit_path(RawPath),
             Parsed = mochiweb_util:parse_qs(QueryString),
             put(?SAVE_QS, Parsed),

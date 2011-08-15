@@ -115,6 +115,11 @@ process_data(State = #state{buffer= <<0,0,0,0,0,0,0,0, Buffer/binary>>, ft=0}) -
     State#state.dest ! closing_handshake,
     process_data(State#state{buffer=Buffer, ft=undefined});
 
+% older closing handshake 0xFF 0x00
+process_data(State = #state{buffer= <<0, Buffer/binary>>, ft=255}) ->
+    State#state.dest ! closing_handshake,
+    process_data(State#state{buffer=Buffer, ft=undefined});
+
 process_data(State = #state{buffer= <<255, Rest/binary>>, ft=0}) ->
     %% message received in full
     State#state.dest ! {websockets_frame, State#state.partial},

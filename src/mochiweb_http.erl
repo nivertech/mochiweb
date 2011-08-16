@@ -116,19 +116,50 @@ default_body(Req) ->
     default_body(Req, Req:get(method), Req:get(path)).
 
 loop(Socket, Body) ->
-    mochiweb_socket:setopts(Socket, [{packet, http}]),
-    request(Socket, Body).
+    mochiweb_socket:setopts(Socket, [{packet, raw}]),
+    request(Socket, Body, true).
 
-request(Socket, Body) ->
-    mochiweb_socket:setopts(Socket, [{active, once}]),
+request(Socket, Body, CheckFirst) ->
+    mochiweb_socket:setopts(Socket, [{active, false}]),
+    First = case CheckFirst of
+        true ->
+            case mochiweb_socket:recv(Socket, 1, ?REQUEST_RECV_TIMEOUT) of
+                {ok, <<"<">>} ->
+                    mochiweb_socket:send(Socket, 
+                                         [<<
+                                            "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                                            "<!DOCTYPE cross-domain-policy SYSTEM \"http://www.adobe.com/xml/dtds/cross-domain-policy.dtd\">"
+                                            "<cross-domain-policy>"
+                                            "<allow-access-from domain=\"*\" to-ports=\"">>, 
+                                          "*", 
+                                          <<
+                                            "\" />"
+                                            "</cross-domain-policy>\0\r\n"
+                                          >>]),
+                    mochiweb_socket:close(Socket),
+                    exit(normal);
+                {ok, <<C:8/integer>>} ->
+                    [C];
+                _ ->
+                    mochiweb_socket:close(Socket),
+                    exit(normal)
+            end;
+        false ->
+            []
+    end,
+    mochiweb_socket:setopts(Socket, [{packet, http},{active, once}]),
     receive
         {Protocol, _, {http_request, Method, Path, Version}} when Protocol == http orelse Protocol == ssl ->
             mochiweb_socket:setopts(Socket, [{packet, httph}]),
-            headers(Socket, {Method, Path, Version}, [], Body, 0);
+            Method2 = case is_list(Method) of
+                          true -> list_to_atom(First ++ Method);
+                          false -> Method
+                      end,
+            headers(Socket, {Method2, Path, Version}, [], Body, 0);
         {Protocol, _, {http_error, "\r\n"}} when Protocol == http orelse Protocol == ssl ->
-            request(Socket, Body);
+            request(Socket, Body, false);
         {Protocol, _, {http_error, "\n"}} when Protocol == http orelse Protocol == ssl ->
-            request(Socket, Body);
+            request(Socket, Body, false);
         {tcp_closed, _} ->
             mochiweb_socket:close(Socket),
             exit(normal);

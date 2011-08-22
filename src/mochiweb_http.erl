@@ -6,7 +6,7 @@
 -module(mochiweb_http).
 -author('bob@mochimedia.com').
 -export([start/0, start/1, stop/0, stop/1]).
--export([loop/2, default_body/1]).
+-export([loop/2, loop_with_flash/2, default_body/1]).
 -export([after_response/2, reentry/1]).
 -export([parse_range_request/1, range_skip_length/2]).
 
@@ -39,10 +39,14 @@ parse_options(Options) ->
     Body = #body{http_loop                  = HttpLoop,
                  websocket_loop             = WsLoop,
                  websocket_origin_validator = WsOrigin},
-    Loop = fun (S) -> ?MODULE:loop(S, Body) end,
+    Loop = case proplists:get_value(flash_policy_server, Options) of
+               true -> fun (S) -> ?MODULE:loop_with_flash(S, Body) end;
+               _    -> fun (S) -> ?MODULE:loop(S, Body) end
+           end,
     Options1 = [{loop, Loop} | 
                     proplists:delete(loop, 
-                        proplists:delete(websocket_opts, Options))],
+                        proplists:delete(websocket_opts,
+                            proplists:delete(flash_policy_server, Options)))],
     mochilists:set_defaults(?DEFAULTS, Options1).
 
 stop() ->
@@ -116,14 +120,16 @@ default_body(Req) ->
     default_body(Req, Req:get(method), Req:get(path)).
 
 loop(Socket, Body) ->
-    mochiweb_socket:setopts(Socket, [{packet, raw}]),
-    request(Socket, Body, true).
+    mochiweb_socket:setopts(Socket, [{packet, http}]),
+    request(Socket, Body).
 
-request(Socket, Body, CheckFirst) ->
+loop_with_flash(Socket, Body) ->
+    mochiweb_socket:setopts(Socket, [{packet, raw}]),
+    request_with_flash(Socket, Body).
+
+request_with_flash(Socket, Body) ->
     mochiweb_socket:setopts(Socket, [{active, false}]),
-    First = case CheckFirst of
-        true ->
-            case mochiweb_socket:recv(Socket, 1, ?REQUEST_RECV_TIMEOUT) of
+    First = case mochiweb_socket:recv(Socket, 1, ?REQUEST_RECV_TIMEOUT) of
                 {ok, <<"<">>} ->
                     mochiweb_socket:send(Socket, 
                                          [<<
@@ -143,10 +149,7 @@ request(Socket, Body, CheckFirst) ->
                 _ ->
                     mochiweb_socket:close(Socket),
                     exit(normal)
-            end;
-        false ->
-            []
-    end,
+            end,
     mochiweb_socket:setopts(Socket, [{packet, http},{active, once}]),
     receive
         {Protocol, _, {http_request, Method, Path, Version}} when Protocol == http orelse Protocol == ssl ->
@@ -157,9 +160,9 @@ request(Socket, Body, CheckFirst) ->
                       end,
             headers(Socket, {Method2, Path, Version}, [], Body, 0);
         {Protocol, _, {http_error, "\r\n"}} when Protocol == http orelse Protocol == ssl ->
-            request(Socket, Body, false);
+            request(Socket, Body);
         {Protocol, _, {http_error, "\n"}} when Protocol == http orelse Protocol == ssl ->
-            request(Socket, Body, false);
+            request(Socket, Body);
         {tcp_closed, _} ->
             mochiweb_socket:close(Socket),
             exit(normal);
@@ -169,6 +172,30 @@ request(Socket, Body, CheckFirst) ->
         mochiweb_socket:close(Socket),
         exit(normal)
     end.
+
+request(Socket, Body) ->
+    mochiweb_socket:setopts(Socket, [{active, once}]),
+    receive
+        {Protocol, _, {http_request, Method, Path, Version}} when Protocol == http orelse Protocol == ssl ->
+            mochiweb_socket:setopts(Socket, [{packet, httph}]),
+            Method2 = case is_list(Method) of
+                          true -> list_to_atom(Method);
+                          false -> Method
+                      end,
+            headers(Socket, {Method2, Path, Version}, [], Body, 0);
+        {Protocol, _, {http_error, "\r\n"}} when Protocol == http orelse Protocol == ssl ->
+            request(Socket, Body);
+        {Protocol, _, {http_error, "\n"}} when Protocol == http orelse Protocol == ssl ->
+            request(Socket, Body);
+        {tcp_closed, _} ->
+            mochiweb_socket:close(Socket),
+            exit(normal);
+        _Other ->
+            handle_invalid_request(Socket)
+    after ?REQUEST_RECV_TIMEOUT ->
+        mochiweb_socket:close(Socket),
+        exit(normal)
+    end.    
 
 reentry(Body) ->
     fun (Req) ->

@@ -146,7 +146,8 @@ send(Data) ->
         ok ->
             ok;
         _ ->
-            exit(normal)
+            %% ORI MODIFICATION: Like in websocket, we want to get a log message when send fails
+            exit(send_failed) 
     end.
 
 %% @spec recv(integer()) -> binary()

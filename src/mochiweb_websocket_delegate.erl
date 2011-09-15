@@ -16,7 +16,7 @@
 
 -module(mochiweb_websocket_delegate).
 -behaviour(gen_server).
-
+-define(HIB_OR_IFTY, infinity).
 -record(state, {legacy,     %% version of websocket protocol
                 socket,     %% mochiweb_socket 
                 dest,       %% pid of client api process, destination for frames
@@ -60,20 +60,20 @@ init([Dest]) ->
 
 handle_call(close, _From, State) ->
     mochiweb_socket:close(State#state.socket),
-    {reply, ok, State};    
+    {reply, ok, State, ?HIB_OR_IFTY};    
 handle_call({send, Msg}, _From, State = #state{legacy=false, socket=Socket}) ->
     %% header is 0xFF then 64bit big-endian int of the msg length
     Len = iolist_size(Msg),
     R = mochiweb_socket:send(Socket, [255, <<Len:64/unsigned-integer>>, Msg]), 
-    {reply, R, State};
+    {reply, R, State, ?HIB_OR_IFTY};
 handle_call({send, Msg}, _From, State = #state{legacy=true, socket=Socket}) ->
     %% legacy spec, msgs are framed with 0x00..0xFF
     R = mochiweb_socket:send(Socket, [0, Msg, 255]),
-    {reply, R, State}.
+    {reply, R, State, ?HIB_OR_IFTY}.
 
 handle_cast({go, Socket}, State) ->
     mochiweb_socket:setopts(Socket, [{active, true}]),    
-    {noreply, State#state{socket=Socket}}.
+    {noreply, State#state{socket=Socket}, ?HIB_OR_IFTY}.
 
 handle_info({'EXIT', _, _}, State) ->
     State#state.dest ! closed,
@@ -90,10 +90,10 @@ handle_info({Error, _Sock, Reason}, State) when Error =:= tcp_error;
 handle_info({SockType, S, Data}, State = #state{socket=S, buffer=Buffer}) when SockType =:= tcp; 
                                                                                SockType =:= ssl ->
     NewState = process_data(State#state{buffer= <<Buffer/binary,Data/binary>>}),
-    {noreply, NewState};
+    {noreply, NewState, ?HIB_OR_IFTY};
 handle_info({ssl, _Sock, Data}, State = #state{buffer=Buffer}) ->
     NewState = process_data(State#state{buffer= <<Buffer/binary,Data/binary>>}),
-    {noreply, NewState}.
+    {noreply, NewState, ?HIB_OR_IFTY}.
 
 terminate(_Reason, _State) ->
     ok.

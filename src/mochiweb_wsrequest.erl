@@ -98,11 +98,11 @@ parse_cookie() ->
 %% @doc comact request, i.e. delete path, query string and headers
 -spec compact() -> ok.
 compact() ->
-    erlang:erase(path), 
-    erlang:erase(raw_path), 
-    erlang:erase(headers), 
-    erlang:erase(?SAVE_QS), 
-    erlang:erase(?SAVE_PATH), 
-    erlang:erase(?SAVE_COOKIE),
+    %erlang:erase(path), 
+    %erlang:erase(raw_path), 
+    %erlang:erase(headers), 
+    %erlang:erase(?SAVE_QS), 
+    %erlang:erase(?SAVE_PATH), 
+    %erlang:erase(?SAVE_COOKIE),
     ok.
 

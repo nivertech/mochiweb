@@ -6,7 +6,7 @@
 %%
 -module(mochiweb_wsrequest, [Pid, RawPath, Headers, Peername, SocketType]).
 
--export([send/1, close/0, get/1, get_header_value/1, get_cookie_value/1, parse_qs/0, compact/0]).
+-export([send/1, close/0, get/1, get_header_value/1, get_cookie_value/1, parse_qs/0]).
 
 -define(SAVE_QS, mochiweb_request_qs).
 -define(SAVE_PATH, mochiweb_request_path).
@@ -94,15 +94,3 @@ parse_cookie() ->
         Cached ->
             Cached
     end.
-
-%% @doc comact request, i.e. delete path, query string and headers
--spec compact() -> ok.
-compact() ->
-    %erlang:erase(path), 
-    %erlang:erase(raw_path), 
-    %erlang:erase(headers), 
-    %erlang:erase(?SAVE_QS), 
-    %erlang:erase(?SAVE_PATH), 
-    %erlang:erase(?SAVE_COOKIE),
-    ok.
-

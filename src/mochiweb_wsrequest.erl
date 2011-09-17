@@ -94,3 +94,15 @@ parse_cookie() ->
         Cached ->
             Cached
     end.
+
+%% @doc comact request, i.e. delete path, query string and headers
+%%      similar to mochiweb_req:cleanup
+%% @end
+-spec compact() -> ok.
+compact() ->
+    io:format("Process dict: ~w~n", [ erlang:get() ]),
+    erlang:erase(?SAVE_QS), 
+    erlang:erase(?SAVE_PATH), 
+    erlang:erase(?SAVE_COOKIE),
+    ok.
+

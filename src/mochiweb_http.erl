@@ -244,13 +244,15 @@ handle_websocket_redirect(Socket, Request, Headers) ->
                 undefined -> 
                     case proplists:get_value('Host', Headers) of
                         undefined -> "";
-                        Host      -> Host
+                        Hst       -> Hst
                     end;
                 U -> U
              end,
-
-    [ProtocolHost, _] = string:tokens(Origin, ":800"),
-    NewURI = iolist_to_binary([ProtocolHost, ":8003", Path]),
+   [Protocol, Host] = case string:tokens(Origin, ":") of
+                        [P, H]    -> [P, H];
+                        [P, H, _] -> [P, H]
+                      end,
+    NewURI = iolist_to_binary([Protocol, $:, Host, ":8003", Path]),
     io:format("NewURI: ~p~n", [NewURI]),
     
     Req = new_request(Socket, Request, Headers),

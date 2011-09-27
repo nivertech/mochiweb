@@ -214,6 +214,7 @@ headers(Socket, Request, Headers, Body, HeaderCount) ->
             case is_websocket_upgrade_requested(MHeaders) of
                 true ->
                     %headers_ws_upgrade(Socket, Request, Body, MHeaders);
+                    io:format("WS UPGRADE REUESTED~n"),
                     handle_websocket_redirect(Socket, Request, Headers); % ZVI
                 false ->
                     Req = new_request(Socket, Request, Headers),

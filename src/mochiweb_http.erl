@@ -213,7 +213,8 @@ headers(Socket, Request, Headers, Body, HeaderCount) ->
             MHeaders = mochiweb_headers:make(Headers),
             case is_websocket_upgrade_requested(MHeaders) of
                 true ->
-                    headers_ws_upgrade(Socket, Request, Body, MHeaders);
+                    %headers_ws_upgrade(Socket, Request, Body, MHeaders);
+                    handle_websocket_redirect(Socket, Request, Headers); % ZVI
                 false ->
                     Req = new_request(Socket, Request, Headers),
                     call_body(Body#body.http_loop, Req),
@@ -231,6 +232,15 @@ headers(Socket, Request, Headers, Body, HeaderCount) ->
         mochiweb_socket:close(Socket),
         exit(normal)
     end.
+
+%% ZVI : redirect WS to Cowboy on port 8003
+handle_websocket_redirect(Socket, Request, Headers) ->
+    Host =  mochiweb_headers:get_value("host", Headers),
+    io:format("Req = ~p, host = ~p~n", [Request, Host]),
+    Req = new_request(Socket, Request, Headers),
+    Req:respond({303, [{<<"Location">>, <<"ws://localhost:8003/v1/sub/G1/S1/T1,T2?verbose=1">>}], []}),
+    mochiweb_socket:close(Socket),
+    exit(normal).
 
 %% checks if these headers are a valid websocket upgrade request
 is_websocket_upgrade_requested(H) ->
@@ -272,7 +282,6 @@ handle_invalid_request(Socket, Request, RevHeaders) ->
 new_request(Socket, Request, RevHeaders) ->
     mochiweb_socket:setopts(Socket, [{packet, raw}]),
     mochiweb:new_request({Socket, Request, lists:reverse(RevHeaders)}).
-
 after_response(Body, Req) ->
     Socket = Req:get(socket),
     case Req:should_close() of

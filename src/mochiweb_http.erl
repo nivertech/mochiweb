@@ -249,8 +249,8 @@ handle_websocket_redirect(Socket, Request, Headers) ->
                 U -> U
              end,
 
-    [Protocol, _Port] = string:tokens(Origin, ":"),
-    NewURI = iolist_to_binary([Protocol, ":8003", Path]),
+    [ProtocolHost, _] = string:tokens(Origin, ":800"),
+    NewURI = iolist_to_binary([ProtocolHost, ":8003", Path]),
     io:format("NewURI: ~p~n", [NewURI]),
     
     Req = new_request(Socket, Request, Headers),

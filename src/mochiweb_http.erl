@@ -236,8 +236,8 @@ headers(Socket, Request, Headers, Body, HeaderCount) ->
 
 %% ZVI : redirect WS to Cowboy on port 8003
 handle_websocket_redirect(Socket, Request, Headers) ->
-    Host =  mochiweb_headers:get_value("host", Headers),
-    io:format("Req = ~p, host = ~p~n", [Request, Host]),
+    %Host =  mochiweb_headers:get_value("host", Headers),
+    io:format("Req = ~p, Headers = ~p~n", [Request, Headers]),
     Req = new_request(Socket, Request, Headers),
     Req:respond({303, [{<<"Location">>, <<"ws://localhost:8003/v1/sub/G1/S1/T1,T2?verbose=1">>}], []}),
     mochiweb_socket:close(Socket),

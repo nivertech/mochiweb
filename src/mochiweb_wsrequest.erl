@@ -100,7 +100,7 @@ parse_cookie() ->
 %% @end
 -spec compact() -> ok.
 compact() ->
-    io:format("Process dict: ~w~n", [ erlang:get() ]),
+    %io:format("Process dict: ~w~n", [ erlang:get() ]),
     erlang:erase(?SAVE_QS), 
     erlang:erase(?SAVE_PATH), 
     erlang:erase(?SAVE_COOKIE),

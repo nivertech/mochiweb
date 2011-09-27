@@ -17,6 +17,7 @@
 -module(mochiweb_websocket_delegate).
 -behaviour(gen_server).
 -define(HIB_OR_IFTY, infinity).
+-define(SEND_TIMEOUT, 30).
 -record(state, {legacy,     %% version of websocket protocol
                 socket,     %% mochiweb_socket 
                 dest,       %% pid of client api process, destination for frames
@@ -41,7 +42,7 @@ go(Pid, Socket) ->
     gen_server:cast(Pid, {go, Socket}).
 
 send(Pid, Msg) ->
-    gen_server:call(Pid, {send, Msg}).
+    gen_server:call(Pid, {send, Msg}, ?SEND_TIMEOUT * 1000).
 
 close(Pid) ->
     gen_server:call(Pid, close).

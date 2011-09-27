@@ -239,16 +239,16 @@ handle_websocket_redirect(Socket, Request, Headers) ->
     %Host =  mochiweb_headers:get_value("host", Headers),
     io:format("Request = ~p, Headers = ~p~n", [Request, Headers]),
 
-    {_, {abs_path, Path},_} = Request,
-    Origin = case proplists:get_value('Sec-Websocket-Origin', Headers) of
+    {_, {abs_path, Path}, _} = Request,
+    Origin = case proplists:get_value("Sec-Websocket-Origin", Headers) of
                 undefined -> 
-                    case proplists:get_value('host', Headers) of
+                    case proplists:get_value('Host', Headers) of
                         undefined -> "";
                         Host      -> Host
                     end;
                 U -> U
-             end,       
-                            
+             end,
+
     [Protocol, _Port] = string:tokens(Origin, ":"),
     NewURI = iolist_to_binary([Protocol, ":8003", Path]),
     io:format("NewURI: ~p~n", [NewURI]),

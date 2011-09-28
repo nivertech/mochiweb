@@ -240,19 +240,12 @@ handle_websocket_redirect(Socket, Request, Headers) ->
     io:format("Request = ~p, Headers = ~p~n", [Request, Headers]),
 
     {_, {abs_path, Path}, _} = Request,
-    Origin = case proplists:get_value("Sec-Websocket-Origin", Headers) of
-                undefined -> 
-                    case proplists:get_value('Host', Headers) of
-                        undefined -> "";
-                        Hst       -> Hst
-                    end;
-                U -> U
+    Host = case proplists:get_value('Host', Headers) of
+                    undefined -> "";
+                    Hst       -> Hst
              end,
-   [Protocol, Host] = case string:tokens(Origin, ":") of
-                        [P, H]    -> [P, H];
-                        [P, H, _] -> [P, H]
-                      end,
-    NewURI = iolist_to_binary([Protocol, $:, Host, ":8003", Path]),
+    [Hostname | _Port] = string:tokens(Host, ":"),
+    NewURI = iolist_to_binary([<<"http://">>, Hostname, <<":8003">>, Path]),
     io:format("NewURI: ~p~n", [NewURI]),
     
     Req = new_request(Socket, Request, Headers),

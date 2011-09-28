@@ -236,7 +236,6 @@ headers(Socket, Request, Headers, Body, HeaderCount) ->
 
 %% ZVI : redirect WS to Cowboy on port 8003
 handle_websocket_redirect(Socket, Request, Headers) ->
-    %Host =  mochiweb_headers:get_value("host", Headers),
     io:format("Request = ~p, Headers = ~p~n", [Request, Headers]),
 
     {_, {abs_path, Path}, _} = Request,
@@ -245,7 +244,7 @@ handle_websocket_redirect(Socket, Request, Headers) ->
                     Hst       -> Hst
              end,
     [Hostname | _Port] = string:tokens(Host, ":"),
-    NewURI = iolist_to_binary([<<"http://">>, Hostname, <<":8003">>, Path]),
+    NewURI = iolist_to_binary([<<"ws://">>, Hostname, <<":8003">>, Path]),
     io:format("NewURI: ~p~n", [NewURI]),
     
     Req = new_request(Socket, Request, Headers),

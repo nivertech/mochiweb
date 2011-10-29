@@ -75,11 +75,13 @@ pinger() ->
 pinger_loop(L) ->
     receive
         {timeout,_,idlemsg} ->
-            start_timer(),
             StartTime=now(),
+            process_flag(priority, low),
             lists:foreach(fun(P) -> P ! idlemsg end, L),
+            process_flag(priority, normal),
             EndTime=now(),
             io:format("Broadcast ping took ~p~n", [timer:now_diff(EndTime, StartTime) / 100000]),
+            start_timer(),
             pinger_loop(L);
         {newclient, P} ->
             pinger_loop([P|L])

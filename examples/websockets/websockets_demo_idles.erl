@@ -2,8 +2,8 @@
 
 -export([start/0, start/1, stop/0, loop/2, wsloop_active/1]).
 
--define(DBG(Fmt,Args), io:format(Fmt,Args)).
-%-define(DBG(Fmt,Args), ok). 
+%-define(DBG(Fmt,Args), io:format(Fmt,Args)).
+-define(DBG(Fmt,Args), ok). 
 
 start() -> start([{port, 8003}, {docroot, "."}]).
 

@@ -7,7 +7,14 @@
 
 -define(SEND_IDLE, 1). 
 
-start() -> start([{port, 8003}, {docroot, "."}]).
+start() -> start([  
+                    {port,                      8003}, 
+                    {docroot, "."},
+                    {backlog,                   1024},   % Mochiweb default = 128
+                    {nodelay,                   true},   % Mochiweb default = false
+                   %{keepalive,                 true},   % TODO: Need to implement in mochiweb_socket_server.erl default - false
+                    {acceptor_pool_size,        1024}, 
+                 ]).
 
 start(Options) ->
     PingerPid = spawn(fun pinger/0),
